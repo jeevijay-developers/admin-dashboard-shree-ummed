@@ -1,53 +1,59 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Plus, Images } from "lucide-react"
+import { Edit, Trash2, Plus, Images, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { fetchEventGalleries } from "@/util/server"
 
-// Mock data for event galleries
-const eventGalleries = [
-  {
-    id: 1,
-    bannerImage: "/sports-meet-banner.jpg",
-    title: "Annual Sports Meet 2024",
-    content:
-      "Complete coverage of our annual sports meet featuring various competitions, award ceremonies, and memorable moments from the event.",
-    images: 25,
-    createdDate: "2024-03-16",
-    status: "Published",
-  },
-  {
-    id: 2,
-    bannerImage: "/cultural-night-banner.jpg",
-    title: "Cultural Night February",
-    content:
-      "Highlights from our cultural night featuring music, dance, drama performances, and artistic showcases by club members.",
-    images: 18,
-    createdDate: "2024-03-01",
-    status: "Published",
-  },
-  {
-    id: 3,
-    bannerImage: "/new-year-celebration-banner.jpg",
-    title: "New Year Celebration 2024",
-    content:
-      "New Year celebration with fireworks, live music, dinner, and entertainment for all club members and their families.",
-    images: 32,
-    createdDate: "2024-01-02",
-    status: "Draft",
-  },
-]
+interface EventGallery {
+  _id: string
+  banner: string
+  title: string
+  content: string
+  images: string[]
+  slug: string
+  createdAt: string
+  updatedAt: string
+}
 
 export default function EventGalleryPage() {
-  const [galleryList, setGalleryList] = useState(eventGalleries)
+  const [galleryList, setGalleryList] = useState<EventGallery[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalGalleries, setTotalGalleries] = useState(0)
 
-  const handleDelete = (id: number) => {
+  const loadEventGalleries = async (page = 1) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await fetchEventGalleries(page, 9)
+      
+      setGalleryList(data.eventGalleries || [])
+      setCurrentPage(data.page || 1)
+      setTotalPages(data.pages || 1)
+      setTotalGalleries(data.total || 0)
+    } catch (err: any) {
+      console.error('Error fetching event galleries:', err)
+      setError(err.response?.data?.error || 'Failed to load event galleries')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadEventGalleries(1)
+  }, [])
+
+  const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this event gallery?")) {
-      setGalleryList((prev) => prev.filter((gallery) => gallery.id !== id))
+      // TODO: Implement actual delete API call
+      setGalleryList((prev) => prev.filter((gallery) => gallery._id !== id))
     }
   }
 
@@ -57,6 +63,12 @@ export default function EventGalleryPage() {
       month: "long",
       day: "numeric",
     })
+  }
+
+  const getGalleryStatus = (createdAt: string) => {
+    // For now, all galleries are considered published
+    // You can add your own logic here based on requirements
+    return "Published"
   }
 
   return (
@@ -79,95 +91,152 @@ export default function EventGalleryPage() {
           <CardTitle>All Event Galleries</CardTitle>
           <CardDescription>View and manage all event photo galleries</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Banner</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Content</TableHead>
-                <TableHead>Images</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {galleryList.map((gallery) => (
-                <TableRow key={gallery.id}>
-                  <TableCell>
-                    <img
-                      src={gallery.bannerImage || "/placeholder.svg"}
-                      alt={gallery.title}
-                      className="w-16 h-12 rounded-lg object-cover"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{gallery.title}</TableCell>
-                  <TableCell className="max-w-xs">
-                    <p className="truncate text-sm">{gallery.content}</p>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Images className="h-4 w-4 text-muted-foreground" />
-                      {gallery.images}
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatDate(gallery.createdDate)}</TableCell>
-                  <TableCell>
-                    <Badge variant={gallery.status === "Published" ? "default" : "secondary"}>{gallery.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(gallery.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="space-y-4">
+          {error && (
+            <div className="text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
+          
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Loading event galleries...</span>
+            </div>
+          ) : galleryList.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No event galleries found. <br />
+              <Link href="/admin/event-gallery/add" className="text-blue-600 hover:underline">
+                <Button className="mt-4">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add First Event Gallery
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Banner</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Content</TableHead>
+                    <TableHead>Images</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {galleryList.map((gallery) => (
+                    <TableRow key={gallery._id}>
+                      <TableCell>
+                        <img
+                          src={gallery.banner || "/placeholder.svg"}
+                          alt={gallery.title}
+                          className="w-16 h-12 rounded-lg object-cover"
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{gallery.title}</TableCell>
+                      <TableCell className="max-w-xs">
+                        <p className="truncate text-sm">{gallery.content}</p>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Images className="h-4 w-4 text-muted-foreground" />
+                          {gallery.images?.length || 0}
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(gallery.createdAt)}</TableCell>
+                      <TableCell>
+                        <Badge variant={getGalleryStatus(gallery.createdAt) === "Published" ? "default" : "secondary"}>
+                          {getGalleryStatus(gallery.createdAt)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(gallery._id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {((currentPage - 1) * 9) + 1} to {Math.min(currentPage * 9, totalGalleries)} of {totalGalleries} galleries
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => loadEventGalleries(currentPage - 1)}
+                      disabled={currentPage === 1 || loading}
+                    >
+                      Previous
+                    </Button>
+                    <span className="flex items-center px-3 py-2 text-sm">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => loadEventGalleries(currentPage + 1)}
+                      disabled={currentPage === totalPages || loading}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
       {/* Gallery Cards View */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {galleryList.map((gallery) => (
-          <Card key={gallery.id} className="overflow-hidden">
-            <div className="relative">
-              <img
-                src={gallery.bannerImage || "/placeholder.svg"}
-                alt={gallery.title}
-                className="w-full h-48 object-cover"
-              />
-              <Badge
-                className="absolute top-2 right-2"
-                variant={gallery.status === "Published" ? "default" : "secondary"}
-              >
-                {gallery.status}
-              </Badge>
-            </div>
-            <CardHeader>
-              <CardTitle className="text-lg">{gallery.title}</CardTitle>
-              <CardDescription className="line-clamp-2">{gallery.content}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center text-sm text-muted-foreground">
-                <span>{gallery.images} images</span>
-                <span>{formatDate(gallery.createdDate)}</span>
+      {!loading && galleryList.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {galleryList.map((gallery) => (
+            <Card key={gallery._id} className="overflow-hidden">
+              <div className="relative">
+                <img
+                  src={gallery.banner || "/placeholder.svg"}
+                  alt={gallery.title}
+                  className="w-full h-48 object-cover"
+                />
+                <Badge
+                  className="absolute top-2 right-2"
+                  variant={getGalleryStatus(gallery.createdAt) === "Published" ? "default" : "secondary"}
+                >
+                  {getGalleryStatus(gallery.createdAt)}
+                </Badge>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <CardHeader>
+                <CardTitle className="text-lg">{gallery.title}</CardTitle>
+                <CardDescription className="line-clamp-2">{gallery.content}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>{gallery.images?.length || 0} images</span>
+                  <span>{formatDate(gallery.createdAt)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

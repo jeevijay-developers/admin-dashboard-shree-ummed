@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Building2, Calendar, ImageIcon, Images, LogOut, ChevronDown, ChevronRight, Plus, List } from "lucide-react"
+import { Building2, Calendar, ImageIcon, Images, LogOut, ChevronDown, ChevronRight, Plus, List, Menu, X } from "lucide-react"
 
 const menuItems = [
   {
@@ -49,23 +49,110 @@ const menuItems = [
 export function AdminSidebar() {
   const pathname = usePathname()
   const [expandedItems, setExpandedItems] = useState<string[]>([])
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
   const toggleExpanded = (title: string) => {
     setExpandedItems((prev) => (prev.includes(title) ? prev.filter((item) => item !== title) : [...prev, title]))
   }
 
+  const closeMobileSidebar = () => {
+    setIsMobileOpen(false)
+  }
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    setIsMobileOpen(false)
+  }, [pathname])
+
+  // Mobile overlay and backdrop
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    return (
+      <>
+        {/* Mobile Menu Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="fixed top-4 left-4 z-50 md:hidden bg-white shadow-md"
+          onClick={() => setIsMobileOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        {/* Mobile Overlay */}
+        {isMobileOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={closeMobileSidebar}
+          />
+        )}
+
+        {/* Mobile Sidebar */}
+        <div
+          className={cn(
+            "fixed left-0 top-0 z-50 h-full w-80 bg-sidebar text-sidebar-foreground transform transition-transform duration-300 ease-in-out md:hidden",
+            isMobileOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <SidebarContent 
+            pathname={pathname}
+            expandedItems={expandedItems}
+            toggleExpanded={toggleExpanded}
+            closeMobileSidebar={closeMobileSidebar}
+            isMobile={true}
+          />
+        </div>
+      </>
+    )
+  }
+
+  // Desktop Sidebar
   return (
-    <div className="w-64 bg-sidebar text-sidebar-foreground flex flex-col">
-      <div className="p-6 border-b border-sidebar-border">
-        <h2 className="text-xl font-bold">Shree Ummed Club</h2>
-        <p className="text-sm text-sidebar-foreground/70">Admin Panel</p>
+    <div className="hidden md:flex w-64 lg:w-72 bg-sidebar text-sidebar-foreground flex-col min-h-screen">
+      <SidebarContent 
+        pathname={pathname}
+        expandedItems={expandedItems}
+        toggleExpanded={toggleExpanded}
+        isMobile={false}
+      />
+    </div>
+  )
+}
+
+interface SidebarContentProps {
+  pathname: string
+  expandedItems: string[]
+  toggleExpanded: (title: string) => void
+  closeMobileSidebar?: () => void
+  isMobile?: boolean
+}
+
+function SidebarContent({ pathname, expandedItems, toggleExpanded, closeMobileSidebar, isMobile = false }: SidebarContentProps) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="p-4 md:p-6 border-b border-sidebar-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg md:text-xl font-bold">Shree Ummed Club</h2>
+            <p className="text-xs md:text-sm text-sidebar-foreground/70">Admin Panel</p>
+          </div>
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={closeMobileSidebar}
+              className="p-1"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
-        <Link href="/admin">
+      <nav className="flex-1 p-3 md:p-4 space-y-1 md:space-y-2 overflow-y-auto">
+        <Link href="/admin" onClick={isMobile ? closeMobileSidebar : undefined}>
           <Button
             variant={pathname === "/admin" ? "secondary" : "ghost"}
-            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent text-sm md:text-base"
           >
             Dashboard
           </Button>
@@ -76,11 +163,11 @@ export function AdminSidebar() {
           const isActive = pathname.startsWith(item.href)
 
           return (
-            <div key={item.title} className="space-y-1">
+            <div key={item.title} className="my-1 md:my-2">
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-between text-sidebar-foreground hover:bg-sidebar-accent",
+                  "w-full justify-between text-sidebar-foreground hover:bg-sidebar-accent text-sm md:text-base",
                   isActive && "bg-sidebar-accent",
                 )}
                 onClick={() => toggleExpanded(item.title)}
@@ -93,14 +180,14 @@ export function AdminSidebar() {
               </Button>
 
               {isExpanded && (
-                <div className="ml-4 space-y-1">
+                <div className="ml-2 md:ml-4 space-y-1 mt-1">
                   {item.subItems.map((subItem) => (
-                    <Link key={subItem.href} href={subItem.href}>
+                    <Link key={subItem.href} href={subItem.href} onClick={isMobile ? closeMobileSidebar : undefined}>
                       <Button
                         variant="ghost"
                         size="sm"
                         className={cn(
-                          "w-full justify-start text-sidebar-foreground/80 hover:bg-sidebar-accent",
+                          "w-full justify-start text-sidebar-foreground/80 hover:bg-sidebar-accent text-xs md:text-sm my-[2px]",
                           pathname === subItem.href && "bg-sidebar-accent text-sidebar-foreground",
                         )}
                       >
@@ -116,10 +203,10 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-3 md:p-4 border-t border-sidebar-border">
         <Button
           variant="ghost"
-          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent text-sm md:text-base"
           onClick={() => (window.location.href = "/")}
         >
           <LogOut className="h-4 w-4 mr-2" />

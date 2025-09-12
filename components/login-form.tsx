@@ -21,7 +21,7 @@ export function LoginForm() {
 
     // Simulate login - replace with actual authentication
     setTimeout(() => {
-      if (email && password) {
+      if (email === "admin@gmail.com" && password === "password") {
         router.push("/admin")
       }
       setIsLoading(false)
@@ -29,40 +29,54 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">Sign In</CardTitle>
-        <CardDescription className="text-center">Enter your credentials to access the admin panel</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="admin@shreummedclub.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign In"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="w-full max-w-md mx-auto px-4 sm:px-0">
+      <Card className="w-full shadow-lg border-0 sm:border sm:shadow-md">
+        <CardHeader className="space-y-1 px-4 sm:px-6 pt-6 sm:pt-6">
+          <CardTitle className="text-xl sm:text-2xl text-center font-bold">Sign In</CardTitle>
+          <CardDescription className="text-center text-sm sm:text-base text-muted-foreground">
+            Enter your credentials to access the admin panel
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-4 sm:px-6 pb-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@shreummedclub.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11 sm:h-12 text-base border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-11 sm:h-12 text-base border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                required
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full h-11 sm:h-12 text-base font-medium mt-6" 
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing in..." : "Sign In"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

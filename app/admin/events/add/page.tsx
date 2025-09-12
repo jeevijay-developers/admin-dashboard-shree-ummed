@@ -10,36 +10,20 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Upload, X } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { addEvent } from "@/util/server"
 
 export default function AddEventPage() {
   const [image, setImage] = useState<File | null>(null)
   const [eventDate, setEventDate] = useState("")
   const [shortDescription, setShortDescription] = useState("")
-  const [slug, setSlug] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  // Auto-generate slug from description
-  const generateSlug = (text: string) => {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim()
-  }
-
+  // Auto-generate slug from description (removed - backend handles this)
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const description = e.target.value
     setShortDescription(description)
-
-    // Auto-generate slug
-    if (description) {
-      const generatedSlug = generateSlug(description.substring(0, 50))
-      setSlug(generatedSlug)
-    } else {
-      setSlug("")
-    }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,12 +40,32 @@ export default function AddEventPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
 
-    // Simulate API call
-    setTimeout(() => {
-      alert("Event added successfully!")
+    try {
+      if (!image) {
+        throw new Error("Please select an image")
+      }
+
+      // Create FormData object for file upload
+      const formData = new FormData()
+      
+      // Append form fields based on event.model.js schema
+      formData.append('image', image)
+      formData.append('eventDate', eventDate)
+      formData.append('shortDescription', shortDescription)
+
+      // Call the API
+      const result = await addEvent(formData)
+      
+      // Success - redirect to events list
       router.push("/admin/events")
-    }, 1000)
+    } catch (error: any) {
+      console.error("Error adding event:", error)
+      setError(error.response?.data?.error || error.message || "Failed to add event. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -77,6 +81,11 @@ export default function AddEventPage() {
           <CardDescription>Enter the event information and upload an image</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-destructive text-sm">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label>Event Image</Label>
@@ -86,7 +95,7 @@ export default function AddEventPage() {
                     <img
                       src={URL.createObjectURL(image) || "/placeholder.svg"}
                       alt="Event preview"
-                      className="w-32 h-32 object-cover rounded-lg"
+                      className="w-full h-full object-cover rounded-lg"
                     />
                     <Button
                       type="button"
@@ -124,6 +133,7 @@ export default function AddEventPage() {
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
+                className="text-base border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
                 required
               />
             </div>
@@ -137,26 +147,12 @@ export default function AddEventPage() {
                 placeholder="Brief description of the event..."
                 rows={4}
                 required
+                className="text-base border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="slug">Slug (Auto-generated)</Label>
-              <Input
-                id="slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="event-slug-will-be-generated"
-                className="bg-muted"
-                readOnly
-              />
-              <p className="text-xs text-muted-foreground">
-                The slug is automatically generated from the description and used for the event URL
-              </p>
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || !image || !eventDate || !shortDescription}>
                 {isLoading ? "Adding..." : "Add Event"}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.push("/admin/events")}>

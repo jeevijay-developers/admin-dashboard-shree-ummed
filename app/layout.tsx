@@ -1,13 +1,12 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'Admin Dashboard - Shree Ummed Club',
+  description: 'Admin panel for managing facilities, events, and gallery of Shree Ummed Club Kota.',
 }
 
 export default function RootLayout({
@@ -19,7 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         {children}
-        <Analytics />
+        <Toaster />
       </body>
     </html>
   )

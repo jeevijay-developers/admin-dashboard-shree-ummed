@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Upload, X } from "lucide-react"
+import { Upload, X, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { eventGallery } from "@/util/server"
 
 export default function AddEventGalleryPage() {
   const [bannerImage, setBannerImage] = useState<File | null>(null)
@@ -17,6 +18,7 @@ export default function AddEventGalleryPage() {
   const [content, setContent] = useState("")
   const [eventImages, setEventImages] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,13 +43,34 @@ export default function AddEventGalleryPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    
+    if (!bannerImage || !title || !content || eventImages.length === 0) {
+      setError("Please fill all fields and upload at least one event image")
+      return
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      alert("Event gallery created successfully!")
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('banner', bannerImage)
+      formData.append('title', title)
+      formData.append('content', content)
+      
+      // Append multiple event images
+      eventImages.forEach((image) => {
+        formData.append('images', image)
+      })
+
+      await eventGallery(formData)
       router.push("/admin/event-gallery")
-    }, 1000)
+    } catch (error: any) {
+      console.error("Error creating event gallery:", error)
+      setError(error.response?.data?.error || "Failed to create event gallery")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -63,6 +86,12 @@ export default function AddEventGalleryPage() {
           <CardDescription>Add banner image, title, content, and event photos</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="text-red-600 bg-red-50 p-3 rounded-lg border border-red-200 mb-6">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label>Banner Image</Label>
@@ -174,9 +203,16 @@ export default function AddEventGalleryPage() {
 
             <div className="flex gap-4">
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create Gallery"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Gallery"
+                )}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.push("/admin/event-gallery")}>
+              <Button type="button" variant="outline" onClick={() => router.push("/admin/event-gallery")} disabled={isLoading}>
                 Cancel
               </Button>
             </div>

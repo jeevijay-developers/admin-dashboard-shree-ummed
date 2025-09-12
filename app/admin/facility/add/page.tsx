@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { X, Upload, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { addFacility } from "@/util/server"
 
 export default function AddFacilityPage() {
   const [title, setTitle] = useState("")
@@ -19,6 +20,7 @@ export default function AddFacilityPage() {
   const [newFeature, setNewFeature] = useState("")
   const [images, setImages] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const addFeature = () => {
@@ -48,12 +50,39 @@ export default function AddFacilityPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
 
-    // Simulate API call
-    setTimeout(() => {
-      alert("Facility added successfully!")
+    try {
+      // Create FormData object for file upload
+      const formData = new FormData()
+      
+      // First create the blog data
+      const blogData = {
+        title,
+        description,
+        features
+      }
+      
+      // Append blog data as JSON string
+      formData.append('name', title)
+      formData.append('data', JSON.stringify(blogData))
+      
+      // Append images
+      images.forEach((image, index) => {
+        formData.append('images', image)
+      })
+
+      // Call the API
+      const result = await addFacility(formData)
+      
+      // Success - redirect to facility list
       router.push("/admin/facility")
-    }, 1000)
+    } catch (error: any) {
+      console.error("Error adding facility:", error)
+      setError(error.response?.data?.error || "Failed to add facility. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -69,6 +98,11 @@ export default function AddFacilityPage() {
           <CardDescription>Enter the facility information and upload photos</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-destructive text-sm">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">Facility Title</Label>
@@ -77,6 +111,7 @@ export default function AddFacilityPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Swimming Pool"
+                className="text-base border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
                 required
               />
             </div>
@@ -89,6 +124,7 @@ export default function AddFacilityPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe the facility and its amenities..."
                 rows={4}
+                className="text-base border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
                 required
               />
             </div>
@@ -101,6 +137,7 @@ export default function AddFacilityPage() {
                   onChange={(e) => setNewFeature(e.target.value)}
                   placeholder="Add a feature"
                   onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addFeature())}
+                  className="text-base border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
                 />
                 <Button type="button" onClick={addFeature} variant="outline">
                   <Plus className="h-4 w-4" />
@@ -158,7 +195,7 @@ export default function AddFacilityPage() {
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || !title || !description || images.length === 0}>
                 {isLoading ? "Adding..." : "Add Facility"}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.push("/admin/facility")}>

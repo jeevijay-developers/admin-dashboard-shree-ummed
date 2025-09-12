@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Upload, X } from "lucide-react"
+import { Upload, X, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { clubGallery } from "@/util/server"
 
 export default function AddClubGalleryPage() {
   const [image, setImage] = useState<File | null>(null)
   const [title, setTitle] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,13 +31,28 @@ export default function AddClubGalleryPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    
+    if (!image || !title) {
+      setError("Please provide both image and title")
+      return
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      alert("Image added to gallery successfully!")
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('images', image) // Note: using 'images' to match backend
+      formData.append('title', title)
+
+      await clubGallery(formData)
       router.push("/admin/club-gallery")
-    }, 1000)
+    } catch (error: any) {
+      console.error("Error adding club gallery image:", error)
+      setError(error.response?.data?.error || "Failed to add image to gallery")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -51,6 +68,12 @@ export default function AddClubGalleryPage() {
           <CardDescription>Upload an image and provide a title</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="text-red-600 bg-red-50 p-3 rounded-lg border border-red-200 mb-6">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label>Image</Label>
@@ -106,9 +129,16 @@ export default function AddClubGalleryPage() {
 
             <div className="flex gap-4">
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Adding..." : "Add to Gallery"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add to Gallery"
+                )}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.push("/admin/club-gallery")}>
+              <Button type="button" variant="outline" onClick={() => router.push("/admin/club-gallery")} disabled={isLoading}>
                 Cancel
               </Button>
             </div>
