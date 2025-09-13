@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation"
 import { eventGallery } from "@/util/server"
 import { compressImage, compressImages } from "@/util/imageCompression"
 import dynamic from "next/dynamic"
+import toast from "react-hot-toast"
 import "react-quill/dist/quill.snow.css"
 
 // Dynamically import ReactQuill to avoid SSR issues
@@ -126,19 +127,10 @@ export default function AddEventGalleryPage() {
         formData.append('images', image)
       })
 
-      console.log('Sending event gallery data:');
-      console.log('Title:', title);
-      console.log('Content length:', content.length);
-      console.log('Banner image:', bannerImage?.name, bannerImage?.size);
-      console.log('Event images count:', eventImages.length);
-
       await eventGallery(formData)
+      toast.success("Event gallery created successfully!")
       router.push("/admin/event-gallery")
-    } catch (error: any) {
-      console.error("Error creating event gallery:", error)
-      console.error("Error response:", error.response?.data)
-      console.error("Error status:", error.response?.status)
-      
+    } catch (error: any) {      
       // Try to extract meaningful error message
       let errorMessage = "Failed to create event gallery"
       if (error.response?.data) {
@@ -154,6 +146,7 @@ export default function AddEventGalleryPage() {
       }
       
       setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }

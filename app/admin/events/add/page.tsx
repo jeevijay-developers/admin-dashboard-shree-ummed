@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Upload, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { addEvent } from "@/util/server"
+import toast from "react-hot-toast"
 
 export default function AddEventPage() {
   const [image, setImage] = useState<File | null>(null)
@@ -59,10 +60,13 @@ export default function AddEventPage() {
       const result = await addEvent(formData)
       
       // Success - redirect to events list
+      toast.success("Event created successfully!")
       router.push("/admin/events")
     } catch (error: any) {
       console.error("Error adding event:", error)
-      setError(error.response?.data?.error || error.message || "Failed to add event. Please try again.")
+      const errorMessage = error.response?.data?.error || error.message || "Failed to add event. Please try again."
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Upload, X, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { clubGallery } from "@/util/server"
+import toast from "react-hot-toast"
 
 export default function AddClubGalleryPage() {
   const [image, setImage] = useState<File | null>(null)
@@ -46,10 +47,13 @@ export default function AddClubGalleryPage() {
       formData.append('title', title)
 
       await clubGallery(formData)
+      toast.success("Image added to gallery successfully!")
       router.push("/admin/club-gallery")
     } catch (error: any) {
       console.error("Error adding club gallery image:", error)
-      setError(error.response?.data?.error || "Failed to add image to gallery")
+      const errorMessage = error.response?.data?.error || "Failed to add image to gallery"
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { X, Upload, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { addFacility } from "@/util/server"
+import toast from "react-hot-toast"
 
 export default function AddFacilityPage() {
   const [title, setTitle] = useState("")
@@ -76,10 +77,13 @@ export default function AddFacilityPage() {
       const result = await addFacility(formData)
       
       // Success - redirect to facility list
+      toast.success("Facility created successfully!")
       router.push("/admin/facility")
     } catch (error: any) {
       console.error("Error adding facility:", error)
-      setError(error.response?.data?.error || "Failed to add facility. Please try again.")
+      const errorMessage = error.response?.data?.error || "Failed to add facility. Please try again."
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
