@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Building2, Calendar, ImageIcon, Images, LogOut, ChevronDown, ChevronRight, Plus, List, Menu, X } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
 
 const menuItems = [
   {
@@ -127,6 +129,13 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({ pathname, expandedItems, toggleExpanded, closeMobileSidebar, isMobile = false }: SidebarContentProps) {
+  const router = useRouter()
+  const { logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 md:p-6 border-b border-sidebar-border">
@@ -207,7 +216,7 @@ function SidebarContent({ pathname, expandedItems, toggleExpanded, closeMobileSi
         <Button
           variant="ghost"
           className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent text-sm md:text-base"
-          onClick={() => (window.location.href = "/")}
+          onClick={handleLogout}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Logout

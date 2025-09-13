@@ -14,22 +14,16 @@ export const addFacility = async (formData) => {
     }
 }
 
-export const fetchFacilities = async (page = 1, limit = 9) => {
+export const clubGallery = async (formData) => {
     try {
-        const response = await axiosInstance.get(`/api/facilities?page=${page}&limit=${limit}`);
+        const response = await axiosInstance.post("/api/club-gallery", formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     } catch (error) {
-        console.error("Error fetching facilities:", error);
-        throw error;
-    }
-}
-
-export const fetchEvents = async (page = 1, limit = 9) => {
-    try {
-        const response = await axiosInstance.get(`/api/events?page=${page}&limit=${limit}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching events:", error);
+        console.error("Error adding club gallery:", error);
         throw error;
     }
 }
@@ -48,16 +42,6 @@ export const addEvent = async (formData) => {
     }
 }
 
-export const fetchEventByDate = async (date) => {
-    try {
-        const response = await axiosInstance.get(`/api/events/date/${date}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching events by date:", error);
-        throw error;
-    }
-}
-
 export const eventGallery = async (formData) => {
     try {
         const response = await axiosInstance.post("/api/event-gallery", formData, {
@@ -72,26 +56,42 @@ export const eventGallery = async (formData) => {
     }
 }
 
+export const fetchFacilities = async (page = 1, limit = 9) => {
+    try {
+        const response = await axiosInstance.get(`/api/facilities/get-all?page=${page}&limit=${limit}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching facilities:", error);
+        throw error;
+    }
+}
+
+export const fetchEventByDate = async (date) => {
+    try {
+        const response = await axiosInstance.get(`/api/events/date/${date}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching events by date:", error);
+        throw error;
+    }
+}
+
+export const fetchEvents = async (page = 1, limit = 9) => {
+    try {
+        const response = await axiosInstance.get(`/api/events?page=${page}&limit=${limit}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching events:", error);
+        throw error;
+    }
+}
+
 export const fetchEventGalleries = async (page = 1, limit = 9) => {
     try {
         const response = await axiosInstance.get(`/api/event-gallery?page=${page}&limit=${limit}`);
         return response.data;
     } catch (error) {
         console.error("Error fetching event galleries:", error);
-        throw error;
-    }
-}
-
-export const clubGallery = async (formData) => {
-    try {
-        const response = await axiosInstance.post("/api/club-gallery", formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error adding club gallery:", error);
         throw error;
     }
 }
