@@ -7,6 +7,9 @@ import { Toaster } from 'react-hot-toast';
 export const metadata: Metadata = {
   title: 'Admin Dashboard - Shree Ummed Club',
   description: 'Admin panel for managing facilities, events, and gallery of Shree Ummed Club Kota.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({

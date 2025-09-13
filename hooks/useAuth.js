@@ -89,12 +89,12 @@ export const useAuth = () => {
         setIsAuthenticated(false);
         
         // Redirect to login
-        router.push('/login');
+        router.push('/');
     }, [router]);
 
     const requireAuth = useCallback(() => {
         if (!loading && !isAuthenticated) {
-            router.push('/login');
+            router.push('/');
             return false;
         }
         return true;
