@@ -5,9 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Plus, Calendar, Loader2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Edit, Trash2, Plus, Calendar, Loader2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { fetchEvents } from "@/util/server"
+import { fetchEvents, deleteEvent } from "@/util/server"
+import toast from "react-hot-toast"
 
 interface Event {
   _id: string
@@ -26,6 +35,14 @@ export default function EventsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalEvents, setTotalEvents] = useState(0)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    event: Event | null
+  }>({
+    open: false,
+    event: null
+  })
 
   const loadEvents = async (page = 1) => {
     try {
@@ -55,10 +72,38 @@ export default function EventsPage() {
     }
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this event?")) {
-      // TODO: Implement actual delete API call
+  const openDeleteDialog = (event: Event) => {
+    setDeleteDialog({
+      open: true,
+      event
+    })
+  }
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({
+      open: false,
+      event: null
+    })
+  }
+
+  const handleDelete = async () => {
+    if (!deleteDialog.event) return
+    
+    const { _id: id, shortDescription } = deleteDialog.event
+    setDeletingId(id)
+    
+    try {
+      await deleteEvent(id)
+      toast.success("Event deleted successfully!")
       setEventList((prev) => prev.filter((event) => event._id !== id))
+      setTotalEvents((prev) => prev - 1)
+      closeDeleteDialog()
+    } catch (error: any) {
+      console.error("Error deleting event:", error)
+      const errorMessage = error.response?.data?.error || "Failed to delete event. Please try again."
+      toast.error(errorMessage)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -172,10 +217,15 @@ export default function EventsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(event._id)}
+                            onClick={() => openDeleteDialog(event)}
+                            disabled={deletingId === event._id}
                             className="text-destructive hover:text-destructive"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            {deletingId === event._id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -215,6 +265,47 @@ export default function EventsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Event
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this event? This action cannot be undone and will permanently remove the event and its associated image.
+              <br /><br />
+              <span className="font-semibold text-foreground">
+                Event: {deleteDialog.event?.shortDescription}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteDialog} disabled={deletingId !== null}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deletingId !== null}
+            >
+              {deletingId ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Event
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

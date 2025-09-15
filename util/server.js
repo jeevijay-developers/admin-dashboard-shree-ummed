@@ -115,3 +115,43 @@ export const fetchClubGalleryBySlug = async (slug) => {
         throw error;
     }
 }
+
+export const deleteFacility = async (id) => {
+    try {
+        const response = await axiosInstance.delete(`/api/facilities/delete/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting facility:", error);
+        throw error;
+    }
+}
+
+export const deleteEvent = async (id) => {
+    try {
+        const response = await axiosInstance.delete(`/api/events/delete/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting event:", error);
+        throw error;
+    }
+}
+
+export const deleteEventGallery = async (id) => {
+    try {
+        const response = await axiosInstance.delete(`/api/event-gallery/delete/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting event gallery:", error);
+        throw error;
+    }
+}
+
+export const deleteClubGallery = async (id) => {
+    try {
+        const response = await axiosInstance.delete(`/api/club-gallery/delete/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting club gallery:", error);
+        throw error;
+    }
+}

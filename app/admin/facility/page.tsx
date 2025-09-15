@@ -5,9 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Plus, Loader2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Edit, Trash2, Plus, Loader2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { fetchFacilities } from "@/util/server"
+import { fetchFacilities, deleteFacility } from "@/util/server"
+import toast from "react-hot-toast"
 
 interface Facility {
   _id: string
@@ -30,6 +39,14 @@ export default function FacilityPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalFacilities, setTotalFacilities] = useState(0)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    facility: Facility | null
+  }>({
+    open: false,
+    facility: null
+  })
 
   const loadFacilities = async (page = 1) => {
     try {
@@ -59,10 +76,38 @@ export default function FacilityPage() {
     }
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this facility?")) {
-      // TODO: Implement actual delete API call
+  const openDeleteDialog = (facility: Facility) => {
+    setDeleteDialog({
+      open: true,
+      facility
+    })
+  }
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({
+      open: false,
+      facility: null
+    })
+  }
+
+  const handleDelete = async () => {
+    if (!deleteDialog.facility) return
+    
+    const { _id: id, name: facilityName } = deleteDialog.facility
+    setDeletingId(id)
+    
+    try {
+      await deleteFacility(id)
+      toast.success("Facility deleted successfully!")
       setFacilityList((prev) => prev.filter((facility) => facility._id !== id))
+      setTotalFacilities((prev) => prev - 1)
+      closeDeleteDialog()
+    } catch (error: any) {
+      console.error("Error deleting facility:", error)
+      const errorMessage = error.response?.data?.error || "Failed to delete facility. Please try again."
+      toast.error(errorMessage)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -152,16 +197,18 @@ export default function FacilityPage() {
                       <TableCell>{facility.images?.length || 0} photos</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-3 w-3" />
-                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(facility._id)}
+                            onClick={() => openDeleteDialog(facility)}
+                            disabled={deletingId === facility._id}
                             className="text-destructive hover:text-destructive"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            {deletingId === facility._id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -200,6 +247,47 @@ export default function FacilityPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Facility
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-foreground">
+                "{deleteDialog.facility?.name}"
+              </span>
+              ? This action cannot be undone and will permanently remove the facility and all its data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteDialog} disabled={deletingId !== null}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deletingId !== null}
+            >
+              {deletingId ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Facility
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

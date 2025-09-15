@@ -4,9 +4,18 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Edit, Trash2, Plus, Loader2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Edit, Trash2, Plus, Loader2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { fetchClubGalleries } from "@/util/server"
+import { fetchClubGalleries, deleteClubGallery } from "@/util/server"
+import toast from "react-hot-toast"
 
 interface ClubGallery {
   _id: string
@@ -23,6 +32,14 @@ export default function ClubGalleryPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalGalleries, setTotalGalleries] = useState(0)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    gallery: ClubGallery | null
+  }>({
+    open: false,
+    gallery: null
+  })
 
   const loadClubGalleries = async (page = 1) => {
     try {
@@ -46,10 +63,38 @@ export default function ClubGalleryPage() {
     loadClubGalleries(1)
   }, [])
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this image?")) {
-      // TODO: Implement actual delete API call
-      setImageList((prev) => prev.filter((image) => image._id !== id))
+  const openDeleteDialog = (gallery: ClubGallery) => {
+    setDeleteDialog({
+      open: true,
+      gallery
+    })
+  }
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({
+      open: false,
+      gallery: null
+    })
+  }
+
+  const handleDelete = async () => {
+    if (!deleteDialog.gallery) return
+    
+    const { _id: id, title } = deleteDialog.gallery
+    setDeletingId(id)
+    
+    try {
+      await deleteClubGallery(id)
+      toast.success("Club gallery deleted successfully!")
+      setImageList((prev) => prev.filter((gallery) => gallery._id !== id))
+      setTotalGalleries((prev) => prev - 1)
+      closeDeleteDialog()
+    } catch (error: any) {
+      console.error("Error deleting club gallery:", error)
+      const errorMessage = error.response?.data?.error || "Failed to delete club gallery. Please try again."
+      toast.error(errorMessage)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -136,10 +181,15 @@ export default function ClubGalleryPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(image._id)}
+                            onClick={() => openDeleteDialog(image)}
+                            disabled={deletingId === image._id}
                             className="text-destructive hover:text-destructive"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            {deletingId === image._id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -207,6 +257,51 @@ export default function ClubGalleryPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Club Gallery
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this club gallery? This action cannot be undone and will permanently remove all images in this gallery.
+              <br /><br />
+              <span className="font-semibold text-foreground">
+                Gallery: "{deleteDialog.gallery?.title}"
+              </span>
+              <br />
+              <span className="text-sm text-muted-foreground">
+                {deleteDialog.gallery?.images?.length || 0} images will be deleted
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteDialog} disabled={deletingId !== null}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deletingId !== null}
+            >
+              {deletingId ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Gallery
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

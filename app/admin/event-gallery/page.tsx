@@ -5,9 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Plus, Images, Loader2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Edit, Trash2, Plus, Images, Loader2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { fetchEventGalleries } from "@/util/server"
+import { fetchEventGalleries, deleteEventGallery } from "@/util/server"
+import toast from "react-hot-toast"
 
 interface EventGallery {
   _id: string
@@ -27,6 +36,14 @@ export default function EventGalleryPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalGalleries, setTotalGalleries] = useState(0)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean
+    gallery: EventGallery | null
+  }>({
+    open: false,
+    gallery: null
+  })
 
   const loadEventGalleries = async (page = 1) => {
     try {
@@ -50,10 +67,38 @@ export default function EventGalleryPage() {
     loadEventGalleries(1)
   }, [])
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this event gallery?")) {
-      // TODO: Implement actual delete API call
+  const openDeleteDialog = (gallery: EventGallery) => {
+    setDeleteDialog({
+      open: true,
+      gallery
+    })
+  }
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({
+      open: false,
+      gallery: null
+    })
+  }
+
+  const handleDelete = async () => {
+    if (!deleteDialog.gallery) return
+    
+    const { _id: id, title } = deleteDialog.gallery
+    setDeletingId(id)
+    
+    try {
+      await deleteEventGallery(id)
+      toast.success("Event gallery deleted successfully!")
       setGalleryList((prev) => prev.filter((gallery) => gallery._id !== id))
+      setTotalGalleries((prev) => prev - 1)
+      closeDeleteDialog()
+    } catch (error: any) {
+      console.error("Error deleting event gallery:", error)
+      const errorMessage = error.response?.data?.error || "Failed to delete event gallery. Please try again."
+      toast.error(errorMessage)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -161,10 +206,15 @@ export default function EventGalleryPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(gallery._id)}
+                            onClick={() => openDeleteDialog(gallery)}
+                            disabled={deletingId === gallery._id}
                             className="text-destructive hover:text-destructive"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            {deletingId === gallery._id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -237,6 +287,51 @@ export default function EventGalleryPage() {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Event Gallery
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this event gallery? This action cannot be undone and will permanently remove the gallery, banner image, and all associated photos.
+              <br /><br />
+              <span className="font-semibold text-foreground">
+                Gallery: "{deleteDialog.gallery?.title}"
+              </span>
+              <br />
+              <span className="text-sm text-muted-foreground">
+                {deleteDialog.gallery?.images?.length || 0} images will be deleted
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteDialog} disabled={deletingId !== null}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deletingId !== null}
+            >
+              {deletingId ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Gallery
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
