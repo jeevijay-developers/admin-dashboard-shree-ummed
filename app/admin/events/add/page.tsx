@@ -15,6 +15,7 @@ import toast from "react-hot-toast"
 
 export default function AddEventPage() {
   const [image, setImage] = useState<File | null>(null)
+  const [name, setName] = useState("")
   const [eventDate, setEventDate] = useState("")
   const [shortDescription, setShortDescription] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -53,6 +54,7 @@ export default function AddEventPage() {
       
       // Append form fields based on event.model.js schema
       formData.append('image', image)
+      formData.append('name', name)
       formData.append('eventDate', eventDate)
       formData.append('shortDescription', shortDescription)
 
@@ -131,6 +133,18 @@ export default function AddEventPage() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="name">Event Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Annual Sports Meet 2024"
+                className="text-base border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="eventDate">Event Date</Label>
               <Input
                 id="eventDate"
@@ -156,7 +170,7 @@ export default function AddEventPage() {
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" disabled={isLoading || !image || !eventDate || !shortDescription}>
+              <Button type="submit" disabled={isLoading || !image || !name || !eventDate || !shortDescription}>
                 {isLoading ? "Adding..." : "Add Event"}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.push("/admin/events")}>

@@ -32,7 +32,8 @@ export default function AddFacilityPage() {
   }
 
   const removeFeature = (featureToRemove: string) => {
-    setFeatures(features.filter((feature) => feature !== featureToRemove))
+    const newFeatures = features.filter((feature) => feature !== featureToRemove)
+    setFeatures(newFeatures)
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,9 +150,20 @@ export default function AddFacilityPage() {
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {features.map((feature, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                    {feature}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => removeFeature(feature)} />
+                  <Badge key={index} variant="secondary" className="flex items-center gap-1 pr-1">
+                    <span>{feature}</span>
+                    <button
+                      type="button"
+                      className="ml-1 hover:bg-gray-400 rounded-full p-0.5 transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        console.log('X button clicked for:', feature)
+                        removeFeature(feature)
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   </Badge>
                 ))}
               </div>
