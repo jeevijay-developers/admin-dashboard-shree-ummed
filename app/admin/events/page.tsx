@@ -19,6 +19,7 @@ import { fetchEvents, deleteEvent } from "@/util/server"
 import toast from "react-hot-toast"
 
 interface Event {
+  name: string,
   _id: string
   image: string
   eventDate: string
@@ -49,7 +50,7 @@ export default function EventsPage() {
       setLoading(true)
       setError(null)
       const data = await fetchEvents(page, 9)
-      
+
       setEventList(data.events || [])
       setCurrentPage(data.page || 1)
       setTotalPages(data.pages || 1)
@@ -88,10 +89,10 @@ export default function EventsPage() {
 
   const handleDelete = async () => {
     if (!deleteDialog.event) return
-    
+
     const { _id: id, shortDescription } = deleteDialog.event
     setDeletingId(id)
-    
+
     try {
       await deleteEvent(id)
       toast.success("Event deleted successfully!")
@@ -120,7 +121,7 @@ export default function EventsPage() {
     const eventDateObj = new Date(eventDate)
     today.setHours(0, 0, 0, 0)
     eventDateObj.setHours(0, 0, 0, 0)
-    
+
     if (eventDateObj > today) {
       return "Upcoming"
     } else if (eventDateObj < today) {
@@ -156,7 +157,7 @@ export default function EventsPage() {
               {error}
             </div>
           )}
-          
+
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -165,9 +166,9 @@ export default function EventsPage() {
           ) : eventList.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No events found.  <br /> <Link href="/admin/events/add" className="text-blue-600 hover:underline">   <Button className="mt-4">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add First Facility
-                </Button></Link>
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Event
+              </Button></Link>
             </div>
           ) : (
             <>
@@ -175,9 +176,9 @@ export default function EventsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Image</TableHead>
-                    <TableHead>Event Date</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead>Slug</TableHead>
+                    <TableHead>Event Date</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -193,16 +194,16 @@ export default function EventsPage() {
                         />
                       </TableCell>
                       <TableCell>
+                        <div className="font-medium">{event.name}</div>
+                      </TableCell>
+                      <TableCell className="max-w-[15rem]">
+                        <p className="truncate">{event.shortDescription}</p>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           {formatDate(event.eventDate)}
                         </div>
-                      </TableCell>
-                      <TableCell className="max-w-xs">
-                        <p className="truncate">{event.shortDescription}</p>
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-muted px-2 py-1 rounded">{event.slug}</code>
                       </TableCell>
                       <TableCell>
                         <Badge variant={getEventStatus(event.eventDate) === "Upcoming" ? "default" : "secondary"}>
@@ -233,7 +234,7 @@ export default function EventsPage() {
                   ))}
                 </TableBody>
               </Table>
-              
+
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between">
@@ -241,8 +242,8 @@ export default function EventsPage() {
                     Showing {((currentPage - 1) * 9) + 1} to {Math.min(currentPage * 9, totalEvents)} of {totalEvents} events
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => loadEvents(currentPage - 1)}
                       disabled={currentPage === 1 || loading}
                     >
@@ -251,8 +252,8 @@ export default function EventsPage() {
                     <span className="flex items-center px-3 py-2 text-sm">
                       Page {currentPage} of {totalPages}
                     </span>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => loadEvents(currentPage + 1)}
                       disabled={currentPage === totalPages || loading}
                     >
