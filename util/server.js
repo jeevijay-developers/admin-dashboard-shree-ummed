@@ -155,3 +155,14 @@ export const deleteClubGallery = async (id) => {
         throw error;
     }
 }
+
+// Check database connectivity
+export const checkDatabaseConnection = async () => {
+    try {
+        const response = await axiosInstance.get("/api/health/db");
+        return response.data;
+    } catch (error) {
+        console.error("Error checking database connection:", error);
+        throw error;
+    }
+}

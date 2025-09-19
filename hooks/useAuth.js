@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 
 // Static credentials
 const STATIC_CREDENTIALS = {
-    email: "admin@example.com",
-    password: "password"
+    email: "ummedclub.kota@gmail.com",
+    password: "$Ummed_club@kota098"
 };
 
 export const useAuth = () => {
